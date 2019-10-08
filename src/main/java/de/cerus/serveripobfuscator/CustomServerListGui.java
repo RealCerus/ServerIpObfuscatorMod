@@ -20,6 +20,7 @@
 
 package de.cerus.serveripobfuscator;
 
+import de.cerus.serveripobfuscator.reflections.ReflectionHelper;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ServerListScreen;
@@ -27,10 +28,6 @@ import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.gui.widget.button.CheckboxButton;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.resources.I18n;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 public class CustomServerListGui extends ServerListScreen {
 
@@ -43,124 +40,76 @@ public class CustomServerListGui extends ServerListScreen {
 
     @Override
     protected void init() {
-        try {
-            Minecraft.getInstance().keyboardListener.enableRepeatEvents(true);
+        Minecraft.getInstance().keyboardListener.enableRepeatEvents(true);
 
-            Field field = getClass().getSuperclass().getDeclaredField("field_195170_a"); //connect button field
-            field.setAccessible(true);
-            field.set(this, (Button) this.addButton(new Button(this.width / 2 - 100, this.height
-                    / 4 + 96 + 12, 200, 20, I18n.format("selectServer.select"),
-                    (p_213026_1_) -> this.connectToServer())));
+        ReflectionHelper.setSilent(this, "field_195170_a", (Button) this.addButton(
+                new Button(this.width / 2 - 100, this.height / 4 + 96 + 12, 200,
+                        20, I18n.format("selectServer.select"), (p_213026_1_) ->
+                        this.connectToServer())), true);
 
-            this.addButton(new Button(this.width / 2 - 100, this.height / 4 + 120 + 12, 200,
-                    20, I18n.format("gui.cancel"), (p_213025_1_) -> {
-                try {
-                    Field f = getClass().getSuperclass().getDeclaredField("field_213027_d"); // cancel button consumer
-                    f.setAccessible(true);
-                    Method m = f.get(this).getClass().getDeclaredMethod("accept", boolean.class);
-                    m.invoke(f.get(this), false);
-                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException | NoSuchFieldException e) {
-                    e.printStackTrace();
-                }
-            }));
+        this.addButton(new Button(this.width / 2 - 100, this.height / 4 + 120 + 12, 200,
+                20, I18n.format("gui.cancel"), (p_213025_1_) -> {
+            Object o = ReflectionHelper.getSilent(this, "field_213027_d", true);
+            ReflectionHelper.invokeSilent(o, "accept", new Object[]{false});
+        }));
 
-            field = getClass().getSuperclass().getDeclaredField("field_146302_g"); // ip edit field
-            field.setAccessible(true);
+        textFieldWidget = new BetterTextFieldWidget(this.font, this.width / 2 - 100, 116,
+                200, 20, I18n.format("addServer.enterIp"));
+        textFieldWidget.setVisible(false);
+        textFieldWidget.setMaxStringLength(128);
 
-            textFieldWidget = new BetterTextFieldWidget(this.font, this.width / 2 - 100, 116,
-                    200, 20, I18n.format("addServer.enterIp"));
-            textFieldWidget.setVisible(false);
-            textFieldWidget.setMaxStringLength(128);
+        widget = new NewGuiPasswordField(this.font, this.width / 2 - 100, 116,
+                200, 20, I18n.format("addServer.enterIp", new Object[0]),
+                textFieldWidget);
+        textFieldWidget.setField(widget);
+        widget.setMaxStringLength(128);
+        widget.setFocused2(true);
+        widget.setText(this.minecraft.gameSettings.lastServer);
+        textFieldWidget.setText(this.minecraft.gameSettings.lastServer);
 
-            widget = new NewGuiPasswordField(this.font, this.width / 2 - 100, 116,
-                    200, 20, I18n.format("addServer.enterIp", new Object[0]),
-                    textFieldWidget);
-            textFieldWidget.setField(widget);
-            widget.setMaxStringLength(128);
-            widget.setFocused2(true);
-            widget.setText(this.minecraft.gameSettings.lastServer);
-            textFieldWidget.setText(this.minecraft.gameSettings.lastServer);
+        widget.func_212954_a((p_213024_1_) -> {
+            ReflectionHelper.invokeSilent(this, "func_195168_i", new Object[]{true});
+        });
 
-            widget.func_212954_a((p_213024_1_) -> {
-                try {
-                    Method method = getClass().getSuperclass().getDeclaredMethod("func_195168_i"); // something active method
-                    method.setAccessible(true);
-                    method.invoke(this);
-                } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            });
+        ReflectionHelper.setSilent(this, "field_146302_g", widget, true);
 
-            field.set(this, widget);
-            this.children.add(widget);
-            this.func_212928_a(widget);
+        this.children.add(widget);
+        this.func_212928_a(widget);
 
-            CheckboxButton button = new BetterCheckboxButton((widget.x + widget.getWidth() + 10), (widget.y),
-                    20, 20, I18n.format("serveripobfuscator.gui.showip"), false, show -> {
-                widget.show(show);
-                if (show) {
-                    try {
-                        Field f = widget.getClass().getSuperclass().getDeclaredField("field_146216_j");
-                        f.setAccessible(true);
-                        f.set(widget, textFieldWidget.getText());
-                    } catch (IllegalAccessException | NoSuchFieldException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    StringBuilder builder = new StringBuilder();
-                    for (int l = 0; l < widget.getText().length(); l++)
-                        builder.append("*");
-                    widget.setText(builder.toString());
-                }
-            });
-            this.addButton(button);
+        CheckboxButton button = new BetterCheckboxButton((widget.x + widget.getWidth() + 10), (widget.y),
+                20, 20, I18n.format("serveripobfuscator.gui.showip"), false, show -> {
+            widget.show(show);
+            if (show) {
+                ReflectionHelper.setSilent(widget, "field_146216_j", textFieldWidget.getText(), true);
+            } else {
+                StringBuilder builder = new StringBuilder();
+                for (int l = 0; l < widget.getText().length(); l++)
+                    builder.append("*");
+                widget.setText(builder.toString());
+            }
+        });
+        this.addButton(button);
 
-            Method method = getClass().getSuperclass().getDeclaredMethod("func_195168_i");
-            method.setAccessible(true);
-            method.invoke(this);
-        } catch (IllegalAccessException | NoSuchFieldException | InvocationTargetException | NoSuchMethodException e) {
-            e.printStackTrace();
-        }
+        ReflectionHelper.invokeSilent(this, "func_195168_i", new Object[]{true});
     }
 
     private void connectToServer() {
-        try {
-            Field field = getClass().getSuperclass().getDeclaredField("field_146301_f");
-            field.setAccessible(true);
-            Object o = field.get(this);
-
-            Debug.printFields(o.getClass());
-
-            field = o.getClass().getDeclaredField("field_78845_b");
-            field.setAccessible(true);
-
-            field.set(o, widget.getRealText());
-
-            field = getClass().getSuperclass().getDeclaredField("field_213027_d");
-            field.setAccessible(true);
-            o = field.get(this);
-            BooleanConsumer consumer = (BooleanConsumer) o;
-            consumer.accept(true);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            e.printStackTrace();
-        }
+        Object o = ReflectionHelper.getSilent(this, "field_146301_f", true);
+        ReflectionHelper.setSilent(o, "field_78845_b", widget.getRealText());
+        o = ReflectionHelper.getSilent(this, "field_213027_d", true);
+        BooleanConsumer consumer = (BooleanConsumer) o;
+        consumer.accept(true);
     }
 
     @Override
     public boolean keyPressed(int p_keyPressed_1_, int p_keyPressed_2_, int p_keyPressed_3_) {
-        try {
-            Field field = getClass().getSuperclass().getDeclaredField("field_146302_g");
-            field.setAccessible(true);
-            if (this.getFocused() != field.get(this) || p_keyPressed_1_ != 257 && p_keyPressed_1_ != 335) {
-                return super.keyPressed(p_keyPressed_1_, p_keyPressed_2_, p_keyPressed_3_);
-            } else {
-                this.connectToServer();
-                return true;
-            }
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            e.printStackTrace();
+        if (this.getFocused() != ReflectionHelper.getSilent(this, "field_146302_g", true)
+                || p_keyPressed_1_ != 257 && p_keyPressed_1_ != 335) {
+            return super.keyPressed(p_keyPressed_1_, p_keyPressed_2_, p_keyPressed_3_);
+        } else {
+            this.connectToServer();
+            return true;
         }
-        return true;
     }
 
     @Override

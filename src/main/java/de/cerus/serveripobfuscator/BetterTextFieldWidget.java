@@ -20,14 +20,11 @@
 
 package de.cerus.serveripobfuscator;
 
-import net.java.games.input.Keyboard;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 
 import javax.annotation.Nullable;
-import java.awt.event.KeyEvent;
 
 public class BetterTextFieldWidget extends TextFieldWidget {
 
